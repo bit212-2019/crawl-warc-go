@@ -63,6 +63,7 @@ func TestCrawl(t *testing.T) {
 		scope,
 		crawl.FetcherFunc(fetch),
 		crawl.HandleRetries(crawl.FollowRedirects(crawl.FilterErrors(saver))),
+		nil,
 	)
 	if err != nil {
 		t.Fatal(err)

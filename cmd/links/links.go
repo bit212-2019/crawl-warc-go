@@ -52,6 +52,7 @@ func main() {
 		scope,
 		crawl.FetcherFunc(http.Get),
 		crawl.HandleRetries(crawl.FollowRedirects(crawl.FilterErrors(crawl.HandlerFunc(extractLinks)))),
+		nil,
 	)
 	if err != nil {
 		log.Fatal(err)
