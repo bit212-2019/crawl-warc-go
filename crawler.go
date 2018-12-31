@@ -2,7 +2,9 @@ package crawl
 
 import (
 	"bytes"
+	"context"
 	"encoding/gob"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -10,18 +12,21 @@ import (
 	"net/http"
 	"net/url"
 	"sync"
-	"sync/atomic"
 	"time"
 
+	jq "git.autistici.org/ai3/jobqueue"
+	"git.autistici.org/ai3/jobqueue/queue"
 	"github.com/PuerkitoBio/purell"
 	"github.com/syndtr/goleveldb/leveldb"
 	lerr "github.com/syndtr/goleveldb/leveldb/errors"
-	"github.com/syndtr/goleveldb/leveldb/iterator"
-	lutil "github.com/syndtr/goleveldb/leveldb/util"
 )
 
-var errorRetryDelay = 180 * time.Second
+// ErrorRetryDelay is how long we're going to wait before retrying a
+// task that had a temporary error.
+var ErrorRetryDelay = 180 * time.Second
 
+// gobDB is a very thin layer on top of LevelDB that serializes
+// objects using encoding/gob.
 type gobDB struct {
 	*leveldb.DB
 }
@@ -38,13 +43,12 @@ func newGobDB(path string) (*gobDB, error) {
 	return &gobDB{db}, nil
 }
 
-func (db *gobDB) PutObjBatch(wb *leveldb.Batch, key []byte, obj interface{}) error {
+func (db *gobDB) PutObj(key []byte, obj interface{}) error {
 	var b bytes.Buffer
 	if err := gob.NewEncoder(&b).Encode(obj); err != nil {
 		return err
 	}
-	wb.Put(key, b.Bytes())
-	return nil
+	return db.DB.Put(key, b.Bytes(), nil)
 }
 
 func (db *gobDB) GetObj(key []byte, obj interface{}) error {
@@ -52,30 +56,10 @@ func (db *gobDB) GetObj(key []byte, obj interface{}) error {
 	if err != nil {
 		return err
 	}
-	if err := gob.NewDecoder(bytes.NewBuffer(data)).Decode(obj); err != nil {
+	if err := gob.NewDecoder(bytes.NewReader(data)).Decode(obj); err != nil {
 		return err
 	}
 	return nil
-}
-
-func (db *gobDB) NewPrefixIterator(prefix []byte) *gobIterator {
-	return newGobIterator(db.NewIterator(lutil.BytesPrefix(prefix), nil))
-}
-
-func (db *gobDB) NewRangeIterator(startKey, endKey []byte) *gobIterator {
-	return newGobIterator(db.NewIterator(&lutil.Range{Start: startKey, Limit: endKey}, nil))
-}
-
-type gobIterator struct {
-	iterator.Iterator
-}
-
-func newGobIterator(i iterator.Iterator) *gobIterator {
-	return &gobIterator{i}
-}
-
-func (i *gobIterator) Value(obj interface{}) error {
-	return gob.NewDecoder(bytes.NewBuffer(i.Iterator.Value())).Decode(obj)
 }
 
 // Outlink is a tagged outbound link.
@@ -138,14 +122,14 @@ var ErrRetryRequest = errors.New("retry_request")
 // The Crawler object contains the crawler state.
 type Crawler struct {
 	db      *gobDB
-	queue   *queue
+	queue   jq.Queue
 	seeds   []*url.URL
 	scope   Scope
 	fetcher Fetcher
 	handler Handler
 
-	stopCh   chan bool
-	stopping atomic.Value
+	workerCtx   context.Context
+	stopWorkers context.CancelFunc
 
 	enqueueMx sync.Mutex
 }
@@ -160,6 +144,13 @@ func normalizeURL(u *url.URL) *url.URL {
 		panic(err)
 	}
 	return u2
+}
+
+var defaultRPCTimeout = 30 * time.Second
+
+type queueItem struct {
+	URL   string
+	Depth int
 }
 
 // Enqueue a (possibly new) URL for processing.
@@ -187,90 +178,89 @@ func (c *Crawler) Enqueue(link Outlink, depth int) error {
 	// Store the URL in the queue, and store an empty URLInfo to
 	// make sure that subsequent calls to Enqueue with the same
 	// URL will fail.
-	wb := new(leveldb.Batch)
-	if err := c.queue.Add(wb, link.URL.String(), depth, time.Now()); err != nil {
+	if err := c.addNewURLToQueue(link.URL, depth); err != nil {
 		return err
 	}
-	if err := c.db.PutObjBatch(wb, ukey, &info); err != nil {
-		return err
-	}
-	return c.db.Write(wb, nil)
+
+	return c.db.PutObj(ukey, &info)
 }
 
-var scanInterval = 1 * time.Second
+func (c *Crawler) addNewURLToQueue(uri *url.URL, depth int) error {
+	data, err := json.Marshal(&queueItem{
+		URL:   uri.String(),
+		Depth: depth,
+	})
+	if err != nil {
+		return err
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), defaultRPCTimeout)
+	defer cancel()
+	tag := []byte(uri.Host)
+	return c.queue.Add(ctx, tag, data)
+}
 
 // Scan the queue for URLs until there are no more.
-func (c *Crawler) process() <-chan queuePair {
-	ch := make(chan queuePair, 100)
-	go func() {
-		t := time.NewTicker(scanInterval)
-		defer t.Stop()
-		defer close(ch)
-		for {
-			select {
-			case <-t.C:
-				if err := c.queue.Scan(ch); err != nil {
-					return
-				}
-			case <-c.stopCh:
-				return
-			}
-		}
-	}()
-	return ch
-}
-
-// Main worker loop.
-func (c *Crawler) urlHandler(queue <-chan queuePair) {
-	for p := range queue {
-		// Stop flag needs to short-circuit the queue (which
-		// is buffered), or it's going to take a while before
-		// we actually stop.
-		if c.stopping.Load().(bool) {
+func (c *Crawler) worker(ctx context.Context) {
+	for {
+		job, err := c.queue.Next(ctx)
+		if err == io.EOF || err == context.Canceled {
+			return
+		} else if err != nil {
+			log.Printf("queue.Next() error: %v", err)
 			return
 		}
 
-		// Retrieve the URLInfo object from the crawl db.
-		// Ignore errors, we can work with an empty object.
-		urlkey := []byte(fmt.Sprintf("url/%s", p.URL))
-		var info URLInfo
-		c.db.GetObj(urlkey, &info) // nolint
-		info.CrawledAt = time.Now()
-		info.URL = p.URL
-
-		// Fetch the URL and handle it. Make sure to Close the
-		// response body (even if it gets replaced in the
-		// Response object).
-		fmt.Printf("%s\n", p.URL)
-		httpResp, httpErr := c.fetcher.Fetch(p.URL)
-		var respBody io.ReadCloser
-		if httpErr == nil {
-			respBody = httpResp.Body
-			info.StatusCode = httpResp.StatusCode
+		if err := job.Done(ctx, c.handleJob(ctx, job)); err != nil {
+			log.Printf("job.Done() error: %v", err)
 		}
-
-		// Invoke the handler (even if the fetcher errored
-		// out). Errors in handling requests are fatal, crawl
-		// will be aborted.
-		err := c.handler.Handle(c, p.URL, p.Depth, httpResp, httpErr)
-		if httpErr == nil {
-			respBody.Close() // nolint
-		}
-
-		wb := new(leveldb.Batch)
-		switch err {
-		case nil:
-			c.queue.Release(wb, p)
-		case ErrRetryRequest:
-			Must(c.queue.Retry(wb, p, errorRetryDelay))
-		default:
-			log.Fatalf("fatal error in handling %s: %v", p.URL, err)
-		}
-
-		// Write the result in our database.
-		Must(c.db.PutObjBatch(wb, urlkey, &info))
-		Must(c.db.Write(wb, nil))
 	}
+}
+
+func (c *Crawler) handleJob(ctx context.Context, job jq.Job) error {
+	var item queueItem
+	if err := json.Unmarshal(job.Data(), &item); err != nil {
+		log.Printf("error decoding payload: %v", err)
+		return nil // Permanent error.
+	}
+
+	return c.handleURL(ctx, &item)
+}
+
+func (c *Crawler) handleURL(ctx context.Context, item *queueItem) error {
+	// Retrieve the URLInfo object from the crawl db.
+	// Ignore errors, we can work with an empty object.
+	urlkey := []byte(fmt.Sprintf("url/%s", item.URL))
+	var info URLInfo
+	c.db.GetObj(urlkey, &info) // nolint
+	info.CrawledAt = time.Now()
+	info.URL = item.URL
+
+	// Fetch the URL and handle it. Make sure to Close the
+	// response body (even if it gets replaced in the
+	// Response object).
+	fmt.Printf("%s\n", item.URL)
+	httpResp, httpErr := c.fetcher.Fetch(item.URL)
+	if httpErr == nil {
+		defer httpResp.Body.Close() // nolint
+		info.StatusCode = httpResp.StatusCode
+	}
+
+	// Invoke the handler (even if the fetcher errored
+	// out). Errors in handling requests are fatal, crawl
+	// will be aborted.
+	err := c.handler.Handle(c, item.URL, item.Depth, httpResp, httpErr)
+
+	switch err {
+	case nil:
+	case ErrRetryRequest:
+		return err
+	default:
+		// Unexpected fatal error in handler.
+		log.Fatalf("fatal error in handling %s: %v", item.URL, err)
+	}
+
+	// Write the result in our database.
+	return c.db.PutObj(urlkey, &info)
 }
 
 // MustParseURLs parses a list of URLs and aborts on failure.
@@ -295,27 +285,33 @@ func NewCrawler(path string, seeds []*url.URL, scope Scope, f Fetcher, h Handler
 		return nil, err
 	}
 
-	c := &Crawler{
-		db:      db,
-		queue:   &queue{db: db},
-		fetcher: f,
-		handler: h,
-		seeds:   seeds,
-		scope:   scope,
-		stopCh:  make(chan bool),
-	}
-	c.stopping.Store(false)
-
-	// Recover active tasks.
-	if err := c.queue.Recover(); err != nil {
+	// Create the queue.
+	q, err := queue.NewQueue(db.DB, queue.WithRetryInterval(ErrorRetryDelay))
+	if err != nil {
 		return nil, err
+	}
+	q.Start()
+
+	// Create a context to control the workers.
+	ctx, cancel := context.WithCancel(context.Background())
+
+	c := &Crawler{
+		db:          db,
+		queue:       q.Client(),
+		fetcher:     f,
+		handler:     h,
+		seeds:       seeds,
+		scope:       scope,
+		workerCtx:   ctx,
+		stopWorkers: cancel,
 	}
 
 	return c, nil
 }
 
 // Run the crawl with the specified number of workers. This function
-// does not exit until all work is done (no URLs left in the queue).
+// does not exit until all work is done (no URLs left in the queue) or
+// Stop is called.
 func (c *Crawler) Run(concurrency int) {
 	// Load initial seeds into the queue.
 	for _, u := range c.seeds {
@@ -324,11 +320,10 @@ func (c *Crawler) Run(concurrency int) {
 
 	// Start some runners and wait until they're done.
 	var wg sync.WaitGroup
-	ch := c.process()
 	for i := 0; i < concurrency; i++ {
 		wg.Add(1)
 		go func() {
-			c.urlHandler(ch)
+			c.worker(c.workerCtx)
 			wg.Done()
 		}()
 	}
@@ -337,8 +332,7 @@ func (c *Crawler) Run(concurrency int) {
 
 // Stop a running crawl. This will cause a running Run function to return.
 func (c *Crawler) Stop() {
-	c.stopping.Store(true)
-	close(c.stopCh)
+	c.stopWorkers()
 }
 
 // Close the database and release resources associated with the crawler state.

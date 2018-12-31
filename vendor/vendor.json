@@ -3,10 +3,22 @@
 	"ignore": "test",
 	"package": [
 		{
-			"checksumSHA1": "gPowz5SHTxjYhSUi+vFq20ww4Zg=",
+			"checksumSHA1": "ngdCFNqw14tnAFPHsr2ABbaThw0=",
+			"path": "git.autistici.org/ai3/jobqueue",
+			"revision": "07813fc0e0f8faa57b2390f39b2a94b555cb2212",
+			"revisionTime": "2018-12-30T15:08:20Z"
+		},
+		{
+			"checksumSHA1": "6npiFEaLCSVfju6PNrxWdGKHt38=",
+			"path": "git.autistici.org/ai3/jobqueue/queue",
+			"revision": "3b8be67160ad1c0acc792e271342ea0411ca552e",
+			"revisionTime": "2018-12-31T09:33:47Z"
+		},
+		{
+			"checksumSHA1": "l1dgFJfzGLG/2AEPyt6ADsnVLPQ=",
 			"path": "github.com/PuerkitoBio/goquery",
-			"revision": "2d2796f41742ece03e8086188fa4db16a3a0b458",
-			"revisionTime": "2018-11-15T20:42:34Z"
+			"revision": "dc2ec5c7ca4d9aae063b79b9f581dd3ea6afd2b2",
+			"revisionTime": "2018-06-07T15:06:10Z"
 		},
 		{
 			"checksumSHA1": "nJrp/CKnvpO+vzTfOeR8qmzRZ4c=",
@@ -21,10 +33,10 @@
 			"revisionTime": "2017-08-10T14:37:23Z"
 		},
 		{
-			"checksumSHA1": "7DQlhUmi8waYHuk3kvrWiTLVygM=",
+			"checksumSHA1": "Q/2QpI7E35SsNYfaxLsWHFry9k4=",
 			"path": "github.com/andybalholm/cascadia",
-			"revision": "680b6a57bda4f657485ad44bdea42342ead737bc",
-			"revisionTime": "2018-10-12T15:44:24Z"
+			"revision": "901648c87902174f774fac311d7f176f8647bdaa",
+			"revisionTime": "2018-02-20T18:43:36Z"
 		},
 		{
 			"checksumSHA1": "h1d2lPZf6j2dW/mIqVnd1RdykDo=",
@@ -33,82 +45,88 @@
 			"revisionTime": "2018-05-18T05:39:59Z"
 		},
 		{
-			"checksumSHA1": "RFpz1DEQgszjgy3cK7pg52cgXn8=",
+			"checksumSHA1": "yNyE9MrpDJQAxOxSipSIBgBhuNQ=",
+			"path": "github.com/google/uuid",
+			"revision": "9b3b1e0f5f99ae461456d768e7d301a7acdaa2d8",
+			"revisionTime": "2018-09-17T14:00:05Z"
+		},
+		{
+			"checksumSHA1": "UruiaCPpVcDKfBTQhAM6UomufIw=",
 			"path": "github.com/pborman/uuid",
-			"revision": "e533369306653d193b93dae055f6083cbf8ba54f",
-			"revisionTime": "2017-11-28T16:27:32Z"
+			"revision": "8b1b92947f46224e3b97bb1a3a5b0382be00d31e",
+			"revisionTime": "2018-09-18T08:52:46Z"
 		},
 		{
-			"checksumSHA1": "LV0VMVON7xY1ttV+s2ph83ntmDQ=",
+			"checksumSHA1": "Yul1w2EZS1iRmkUNyPuO+QMKwBQ=",
 			"path": "github.com/syndtr/goleveldb/leveldb",
-			"revision": "b001fa50d6b27f3f0bb175a87d0cb55426d0a0ae",
-			"revisionTime": "2018-11-28T10:09:59Z"
+			"revision": "ae2bd5eed72d46b28834ec3f60db3a3ebedd8dbd",
+			"revisionTime": "2018-08-15T03:29:40Z"
 		},
 		{
-			"checksumSHA1": "mPNraL2edpk/2FYq26rSXfMHbJg=",
+			"checksumSHA1": "EKIow7XkgNdWvR/982ffIZxKG8Y=",
 			"path": "github.com/syndtr/goleveldb/leveldb/cache",
-			"revision": "b001fa50d6b27f3f0bb175a87d0cb55426d0a0ae",
-			"revisionTime": "2018-11-28T10:09:59Z"
+			"revision": "ae2bd5eed72d46b28834ec3f60db3a3ebedd8dbd",
+			"revisionTime": "2018-08-15T03:29:40Z"
 		},
 		{
-			"checksumSHA1": "UA+PKDKWlDnE2OZblh23W6wZwbY=",
+			"checksumSHA1": "5KPgnvCPlR0ysDAqo6jApzRQ3tw=",
 			"path": "github.com/syndtr/goleveldb/leveldb/comparer",
-			"revision": "b001fa50d6b27f3f0bb175a87d0cb55426d0a0ae",
-			"revisionTime": "2018-11-28T10:09:59Z"
+			"revision": "ae2bd5eed72d46b28834ec3f60db3a3ebedd8dbd",
+			"revisionTime": "2018-08-15T03:29:40Z"
 		},
 		{
 			"checksumSHA1": "1DRAxdlWzS4U0xKN/yQ/fdNN7f0=",
 			"path": "github.com/syndtr/goleveldb/leveldb/errors",
-			"revision": "b001fa50d6b27f3f0bb175a87d0cb55426d0a0ae",
-			"revisionTime": "2018-11-28T10:09:59Z"
+			"revision": "ae2bd5eed72d46b28834ec3f60db3a3ebedd8dbd",
+			"revisionTime": "2018-08-15T03:29:40Z"
 		},
 		{
 			"checksumSHA1": "eqKeD6DS7eNCtxVYZEHHRKkyZrw=",
 			"path": "github.com/syndtr/goleveldb/leveldb/filter",
-			"revision": "b001fa50d6b27f3f0bb175a87d0cb55426d0a0ae",
-			"revisionTime": "2018-11-28T10:09:59Z"
+			"revision": "ae2bd5eed72d46b28834ec3f60db3a3ebedd8dbd",
+			"revisionTime": "2018-08-15T03:29:40Z"
 		},
 		{
-			"checksumSHA1": "hPyFsMiqZ1OB7MX+6wIAA6nsdtc=",
+			"checksumSHA1": "weSsccMav4BCerDpSLzh3mMxAYo=",
 			"path": "github.com/syndtr/goleveldb/leveldb/iterator",
-			"revision": "b001fa50d6b27f3f0bb175a87d0cb55426d0a0ae",
-			"revisionTime": "2018-11-28T10:09:59Z"
+			"revision": "ae2bd5eed72d46b28834ec3f60db3a3ebedd8dbd",
+			"revisionTime": "2018-08-15T03:29:40Z"
 		},
 		{
 			"checksumSHA1": "gJY7bRpELtO0PJpZXgPQ2BYFJ88=",
 			"path": "github.com/syndtr/goleveldb/leveldb/journal",
-			"revision": "b001fa50d6b27f3f0bb175a87d0cb55426d0a0ae",
-			"revisionTime": "2018-11-28T10:09:59Z"
+			"revision": "ae2bd5eed72d46b28834ec3f60db3a3ebedd8dbd",
+			"revisionTime": "2018-08-15T03:29:40Z"
 		},
 		{
 			"checksumSHA1": "MtYY1b2234y/MlS+djL8tXVAcQs=",
 			"path": "github.com/syndtr/goleveldb/leveldb/memdb",
-			"revision": "b001fa50d6b27f3f0bb175a87d0cb55426d0a0ae",
-			"revisionTime": "2018-11-28T10:09:59Z"
+			"revision": "ae2bd5eed72d46b28834ec3f60db3a3ebedd8dbd",
+			"revisionTime": "2018-08-15T03:29:40Z"
 		},
 		{
-			"checksumSHA1": "o2TorI3z+vc+EBMJ8XeFoUmXBtU=",
+			"checksumSHA1": "UmQeotV+m8/FduKEfLOhjdp18rs=",
 			"path": "github.com/syndtr/goleveldb/leveldb/opt",
-			"revision": "b001fa50d6b27f3f0bb175a87d0cb55426d0a0ae",
-			"revisionTime": "2018-11-28T10:09:59Z"
+			"revision": "ae2bd5eed72d46b28834ec3f60db3a3ebedd8dbd",
+			"revisionTime": "2018-08-15T03:29:40Z"
 		},
 		{
 			"checksumSHA1": "ZnyuciM+R19NG8L5YS3TIJdo1e8=",
 			"path": "github.com/syndtr/goleveldb/leveldb/storage",
-			"revision": "b001fa50d6b27f3f0bb175a87d0cb55426d0a0ae",
-			"revisionTime": "2018-11-28T10:09:59Z"
+			"revision": "ae2bd5eed72d46b28834ec3f60db3a3ebedd8dbd",
+			"revisionTime": "2018-08-15T03:29:40Z"
 		},
 		{
 			"checksumSHA1": "gWFPMz8OQeul0t54RM66yMTX49g=",
 			"path": "github.com/syndtr/goleveldb/leveldb/table",
-			"revision": "b001fa50d6b27f3f0bb175a87d0cb55426d0a0ae",
-			"revisionTime": "2018-11-28T10:09:59Z"
+			"revision": "ae2bd5eed72d46b28834ec3f60db3a3ebedd8dbd",
+			"revisionTime": "2018-08-15T03:29:40Z"
 		},
 		{
 			"checksumSHA1": "V/Dh7NV0/fy/5jX1KaAjmGcNbzI=",
 			"path": "github.com/syndtr/goleveldb/leveldb/util",
-			"revision": "b001fa50d6b27f3f0bb175a87d0cb55426d0a0ae",
-			"revisionTime": "2018-11-28T10:09:59Z"
+			"revision": "ae2bd5eed72d46b28834ec3f60db3a3ebedd8dbd",
+			"revisionTime": "2018-08-15T03:29:40Z"
 		},
 		{
 			"checksumSHA1": "UrM9Sbp5q0sBFxqb5iMhqiPpXII=",
