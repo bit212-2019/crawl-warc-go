@@ -288,7 +288,7 @@ func MustParseURLs(urls []string) []*url.URL {
 }
 
 // NewCrawler creates a new Crawler object with the specified behavior.
-func NewCrawler(path string, seeds []*url.URL, scope Scope, f Fetcher, h Handler) (*Crawler, error) {
+func NewCrawler(path string, seeds []*url.URL, scope Scope, f Fetcher, h Handler, rl queue.RatelimiterFunc) (*Crawler, error) {
 	// Open the crawl database.
 	db, err := newGobDB(path)
 	if err != nil {
@@ -296,7 +296,13 @@ func NewCrawler(path string, seeds []*url.URL, scope Scope, f Fetcher, h Handler
 	}
 
 	// Create the queue.
-	q, err := queue.NewQueue(db.DB, queue.WithRetryInterval(ErrorRetryDelay))
+	opts := []queue.Option{
+		queue.WithRetryInterval(ErrorRetryDelay),
+	}
+	if rl != nil {
+		opts = append(opts, queue.WithRatelimiter(rl))
+	}
+	q, err := queue.NewQueue(db.DB, opts...)
 	if err != nil {
 		return nil, err
 	}

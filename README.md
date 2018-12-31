@@ -65,6 +65,13 @@ created, e.g.:
 
     $ crawl --output=out-%s.warc.gz http://example.com/
 
+The crawler will rate-limit its requests to avoid overloading the
+target servers. You can select the desired rate of requests per second
+with the *--qps* option. It is a floating point number, so you can use
+values < 1 to space requests further apart than one second. Note that
+rate limiting is currently applied separately for each hostname,
+*before* DNS resolution.
+
 ## Limitations
 
 Like most crawlers, this one has a number of limitations:

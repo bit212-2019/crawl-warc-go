@@ -22,6 +22,7 @@ import (
 	"syscall"
 	"time"
 
+	"git.autistici.org/ai3/jobqueue/queue"
 	"git.autistici.org/ale/crawl"
 	"git.autistici.org/ale/crawl/analysis"
 	"git.autistici.org/ale/crawl/warc"
@@ -36,6 +37,7 @@ var (
 	excludeRelated = flag.Bool("exclude-related", false, "include related resources (css, images, etc) only if their URL is in scope")
 	outputFile     = flag.String("output", "crawl.warc.gz", "output WARC file or pattern (patterns must include a \"%s\" literal token)")
 	warcFileSizeMB = flag.Int("output-max-size", 100, "maximum output WARC file size (in MB) when using patterns")
+	hostQPS        = flag.Float64("qps", 3, "per-hostname qps limit")
 	cpuprofile     = flag.String("cpuprofile", "", "create cpu profile")
 
 	excludes []*regexp.Regexp
@@ -296,12 +298,20 @@ func main() {
 		log.Fatal(err)
 	}
 
+	var rl queue.RatelimiterFunc
+	if *hostQPS > 0 {
+		rl = func(_ []byte) queue.Ratelimiter {
+			return queue.NewSimpleRatelimiter(*hostQPS)
+		}
+	}
+
 	crawler, err := crawl.NewCrawler(
 		*dbPath,
 		seeds,
 		scope,
 		crawl.FetcherFunc(fetch),
 		crawl.HandleRetries(crawl.FollowRedirects(crawl.FilterErrors(saver))),
+		rl,
 	)
 	if err != nil {
 		log.Fatal(err)
