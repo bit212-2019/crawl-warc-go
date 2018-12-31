@@ -3,16 +3,16 @@
 	"ignore": "test",
 	"package": [
 		{
-			"checksumSHA1": "ngdCFNqw14tnAFPHsr2ABbaThw0=",
+			"checksumSHA1": "GYJVAUVqaN6SgNF5otkN5m4UmG0=",
 			"path": "git.autistici.org/ai3/jobqueue",
-			"revision": "07813fc0e0f8faa57b2390f39b2a94b555cb2212",
-			"revisionTime": "2018-12-30T15:08:20Z"
+			"revision": "5f19367371252268325a801f6b96aef01d7f215f",
+			"revisionTime": "2018-12-31T10:29:06Z"
 		},
 		{
 			"checksumSHA1": "6npiFEaLCSVfju6PNrxWdGKHt38=",
 			"path": "git.autistici.org/ai3/jobqueue/queue",
-			"revision": "3b8be67160ad1c0acc792e271342ea0411ca552e",
-			"revisionTime": "2018-12-31T09:33:47Z"
+			"revision": "5f19367371252268325a801f6b96aef01d7f215f",
+			"revisionTime": "2018-12-31T10:29:06Z"
 		},
 		{
 			"checksumSHA1": "l1dgFJfzGLG/2AEPyt6ADsnVLPQ=",
