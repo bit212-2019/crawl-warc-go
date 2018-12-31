@@ -19,11 +19,18 @@ import (
 	"github.com/PuerkitoBio/purell"
 	"github.com/syndtr/goleveldb/leveldb"
 	lerr "github.com/syndtr/goleveldb/leveldb/errors"
+	"github.com/syndtr/goleveldb/leveldb/opt"
 )
 
-// ErrorRetryDelay is how long we're going to wait before retrying a
-// task that had a temporary error.
-var ErrorRetryDelay = 180 * time.Second
+var (
+	// ErrorRetryDelay is how long we're going to wait before retrying a
+	// task that had a temporary error.
+	ErrorRetryDelay = 180 * time.Second
+
+	// LevelDBWriteBufferSize is the size of the levelDB write buffer
+	// (higher than the default as the workload is write-intensive).
+	LevelDBWriteBufferSize = 32 * 1024 * 1024
+)
 
 // gobDB is a very thin layer on top of LevelDB that serializes
 // objects using encoding/gob.
@@ -32,7 +39,10 @@ type gobDB struct {
 }
 
 func newGobDB(path string) (*gobDB, error) {
-	db, err := leveldb.OpenFile(path, nil)
+	db, err := leveldb.OpenFile(path, &opt.Options{
+		OpenFilesCacheCapacity: 1000,
+		WriteBuffer:            LevelDBWriteBufferSize,
+	})
 	if lerr.IsCorrupted(err) {
 		log.Printf("corrupted database, recovering...")
 		db, err = leveldb.RecoverFile(path, nil)
